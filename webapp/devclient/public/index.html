@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+
+  <title>{{ title }}</title>
+
+  <link rel="stylesheet" href="/static/css/normalize.min.css" inline>
+  <link rel="stylesheet" href="/static/css/bootstrap-3.1.1.min.css" inline>
+  <link rel="stylesheet" href="/static/css/bootstrap-custom.css" inline>
+  <link rel="stylesheet" href="/static/css/style.css" inline>
+
+  <!-- how to check uncompressed file.              -->
+  <!-- 1. access by '.min' or '-min' from file name -->
+  <!-- 2. minified from service:                    -->
+  <!--      https://javascript-minifier.com/        -->
+  <!-- 3. confirm there is no difference.           -->
+  <!-- bootstrap -->
+  <!-- license: MIT-License -->
+  <script type="text/javascript" src="/static/js/lib/bootstrap-native-v4.min.js" inline></script>
+  <!-- polyfill IE11 -->
+  <!-- license: MIT-License -->
+  <script type="text/javascript" src="/static/js/lib/object-assign-auto.min.js" inline></script>
+  <!-- vue -->
+  <!-- license: MIT-License -->
+  <script type="text/javascript" src="/static/js/lib/vue/vue.min.js" inline></script>
+  <script type="text/javascript" src="/static/js/lib/vue/vue-router.min.js" inline></script>
+  <script type="text/javascript" src="/static/js/lib/vue/vuex.min.js" inline></script>
+  <script type="text/javascript" src="/static/js/lib/vue/vuex-router-sync.min.js" inline></script>
+  <script type="text/javascript" src="/static/js/lib/vue/vue-i18n.min.js" inline></script>
+  <!-- coin -->
+  <!-- license: MIT-License -->
+  <script type="text/javascript" src="/static/js/lib/bitcoinjs-lib-3.2.2-custom.min.js" inline></script>
+  <!-- license: MPL-2.0 -->
+  <script type="text/javascript" src="/static/js/lib/ethereumjs-util.min.js" inline></script>
+  <!-- other -->
+  <!-- license: BSD-License -->
+  <script type="text/javascript" src="/static/js/lib/securerandom.min.js" inline></script>
+  <!-- license: MIT-License -->
+  <script type="text/javascript" src="/static/js/lib/qrcode.min.js" inline></script>
+  <!-- self -->
+  <script type="text/javascript" src="/static/js/lib/etherwallet.js" inline></script>
+  <script type="text/javascript" src="/static/js/lib/addressgenerator.js" inline></script>
+  <script type="text/javascript" src="/static/js/lib/qrcodehelper.js" inline></script>
+</head>
+<body>
+  <div id="app"></div>
+
+  <!-- template -->
+  <template id="tmpl-app">
+    <div id="app">
+      <header class="navbar">
+        <center>
+          <nav class="navbar-header">
+            <div class="btn-group btn-breadcrumb">
+              <a href="#" v-for="(val, key) in pathList"
+                class="no-touch btn"
+                :class="{'btn-info': isVisited(val, $route.path), 'btn-default': !isVisited(val, $route.path)}">
+                {{ key | capitalize }}
+              </a>
+            </div>
+          </nav>
+
+          <!-- 言語切り替え -->
+          <div class="locale_list center">
+            <a :class="{disable: locale=='en'}" v-on:click="setLocale('en')">English</a>
+            |
+            <a :class="{disable: locale=='ja'}" v-on:click="setLocale('ja')">日本語</a>
+          </div>
+        </center>
+      </header>
+      <article>
+        <router-view></router-view>
+      </article>
+    </div>
+  </template>
+
+  <template id="tmpl-home">
+    <section class="home">
+      <center>
+        <h1>Multiple Paper Wallet Generator</h1>
+
+        <p>{{ $t("home.about") }}</p>
+      </center>
+
+      <center class="logo-list">
+        <img id="logo-segwit" class="logo logo-btc" src="/static/img/Segwit.png" alt="bitcoin segwit" inline />
+        <img id="logo-bch" class="logo" src="/static/img/Bitcoin_Cash.png" alt="bitcoincash" inline />
+        <img id="logo-eth" class="logo" src="/static/img/Ethereum_logo.png" alt="ethereum" inline /><span class="logo-eth">Ethereum</span>
+        <img id="logo-ltc" class="logo" src="/static/img/LTC-logo.png" alt="litecoin" inline />
+        <img id="logo-dash" class="logo logo-dash" src="/static/img/dash_logo.png" alt="dash" inline />
+      </center>
+
+      <center>
+        <router-link to="/generate" class="btn btn-primary">{{ $t("home.start_btn") }}</router-link>
+        <footer class="footer">
+          <div>{{ $t("home.footer") }}</div>
+          <hr>
+          <div>© 2018 Multiple Paper Wallet Generator, Inc. <a href="https://github.com/blockchainaddress/blockchainaddress">GitHub Repository</a></div>
+        </footer>
+      </center>
+    </section>
+  </template>
+
+  <template id="tmpl-generate">
+    <section class="generate">
+      <div>{{ $t("generate.sentence_1") }}</div>
+      <div>{{ $t("generate.sentence_2") }} {{ remain }}</div>
+      <div v-for="pos in seedPoints"
+        class="seedpoint"
+        v-bind:style="{left: pos.x + 'px', top: pos.y + 'px'}">
+      </div>
+    </section>
+  </template>
+
+  <template id="tmpl-result">
+    <section class="result">
+      <h3 class="float-left">{{ $t("result.wallet_list") }}</h3>
+
+      <div class="float-right">
+        <button class="btn btn-warning btn-sm" v-on:click="reCalcAddressKey()">{{ $t("result.recalc_btn") }}</button>
+        <button class="btn btn-warning btn-sm" v-on:click="window.print()">{{ $t("result.print_btn") }}</button>
+      </div>
+
+      <div class="paperarea table">
+        <div class="row" v-for="elem in addressWifs">
+          <div class="keyarea cell">
+            <center><div class="center">
+              <img v-if="elem.suffix == suffixes.segwit" class="logo-min logo-btc" src="/static/img/Segwit.png" alt="bitcoin segwit" inline />
+              <img v-else-if="elem.suffix == suffixes.bitcoincash" class="logo-min" src="/static/img/Bitcoin_Cash.png" alt="bitcoincash" inline />
+              <span v-else-if="elem.suffix == suffixes.ethereum">
+                <img class="logo-min" src="/static/img/Ethereum_logo.png" alt="ethereum" inline />
+                <span class="logo-eth logo-min selectable">Ethereum</span>
+              </span>
+              <img v-else-if="elem.suffix == suffixes.litecoin" class="logo-min" src="/static/img/LTC-logo.png" alt="litecoin" inline />
+              <img v-else-if="elem.suffix == suffixes.dash" class="logo-min logo-dash" src="/static/img/dash_logo.png" alt="dash" inline />
+            </div></center>
+
+            <span class="selectable">{{ elem.name }}</span>
+
+            <div class="share">
+              <div class="qrcodeshare" v-bind:id="'qrcodeshare_' + elem.suffix"></div>
+              <div class="shareaddress">
+                <div class="label label-success selectable">
+                  <span v-if="elem.suffix == 'ethereum'">Account Address</span>
+                  <span v-else>Share Address</span>
+                </div>
+                <div class="output selectable">{{ elem.address }}</div>
+              </div>
+            </div>
+            <div class="private">
+              <div class="qrcodeprivate" v-bind:id="'qrcodeprivate_' + elem.suffix"></div>
+              <div class="privatewif">
+                <div class="label label-danger selectable">
+                  <span v-if="elem.suffix == 'ethereum'">Private Key</span>
+                  <span v-else>Private Wif</span>
+                </div>
+                <div class="output selectable">{{ elem.wif }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </template>
+
+  <!-- app code -->
+  <script type="text/javascript" src="/static/js/util/util.js" inline></script>
+  <script type="text/javascript" src="/static/js/util/title.js" inline></script>
+  <script type="text/javascript" src="/static/js/router.js" inline></script>
+  <script type="text/javascript" src="/static/js/i18n.js" inline></script>
+  <script type="text/javascript" src="/static/js/store/plugins/logger.js" inline></script>
+  <script type="text/javascript" src="/static/js/store/plugins/index.js" inline></script>
+  <script type="text/javascript" src="/static/js/store/mutations.js" inline></script>
+  <script type="text/javascript" src="/static/js/store/store.js" inline></script>
+  <script type="text/javascript" src="/static/js/components/home.js" inline></script>
+  <script type="text/javascript" src="/static/js/components/generate.js" inline></script>
+  <script type="text/javascript" src="/static/js/components/result.js" inline></script>
+  <script type="text/javascript" src="/static/js/appcomp.js" inline></script>
+  <script type="text/javascript" src="/static/js/app.js" inline></script>
+  <script type="text/javascript" src="/static/js/main.js" inline></script>
+</body>
+</html>
+

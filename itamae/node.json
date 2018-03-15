@@ -1,0 +1,7 @@
+{
+	"deploy_env": {
+		"user": "",
+		"git_ssh_url": "",
+		"deploy_dir": ""
+	}
+}

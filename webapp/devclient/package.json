@@ -1,0 +1,14 @@
+{
+  "name": "dev",
+  "version": "1.0.0",
+  "description": "",
+  "main": "inline.js",
+  "scripts": {
+    "inline": "node inline.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "inline-source": "^5.2.6"
+  }
+}

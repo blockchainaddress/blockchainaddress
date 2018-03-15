@@ -1,0 +1,33 @@
+version: '3'
+services:
+  # Website server
+  webapp:
+    build:
+      context: ./webapp
+    volumes:
+      - ./webapp/public:/public
+    tty: true
+    restart: always
+    networks:
+      - frontend
+
+  # nginx server
+  nginx:
+    build:
+      context: ./nginx
+    depends_on:
+      - webapp
+    volumes:
+      - ./nginx/sites:/etc/nginx/sites-available
+      - ./webapp/static:/home/webapp/static
+      # TODO: log
+    ports:
+      - "80:80"
+      - "443:443"
+    restart: always
+    networks:
+      - frontend
+
+networks:
+  frontend:
+    driver: "bridge"
